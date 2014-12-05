@@ -1,3 +1,4 @@
+import pymongo
 from pymongo.mongo_client import MongoClient
 client = MongoClient()
 db = client.ukulele
@@ -76,13 +77,18 @@ class Chord(object):
         ret = ['Chord']
         if not self.is_valid():
             ret.append('unknown chord')
-            ret.append()
         else:
             ret.append(self.root + self.chordtype)
 
-        ret.append(''.join(map(str, self.fingers)))
+        ret.append(self.fingers_str())
         return ' '.join(ret)
 
+    def fingers_str(self):
+        return ''.join(map(str, self.fingers))
+
+    def fullname(self):
+        return self.root + self.chordtype
+        
     def __repr__(self):
         return str(self)
 
@@ -90,9 +96,10 @@ class Chord(object):
         return dict(
             root=self.root,
             fingers=self.fingers,
-            tuning=''.join(self.tuning),
+            tuning=self.tuning,
             allnotes=self.allnotes,
             normnotes=self.normnotes,
+            fullname=self.fullname(),
             inteval_list=self.interval_list,
             chordtype=self.chordtype
         )
@@ -102,4 +109,34 @@ def save_chord(chord):
     if not chord.is_valid():
         raise Exception('not a valid chord')
 
-    db.chords.save(chord.to_dict())
+    kv = chord.to_dict()
+    kv['fingers_str'] = chord.fingers_str()
+    kv['fings_sum'] = sum(chord.fingers)
+    kv['fings_min'] = min(chord.fingers)
+    kv['_id'] = dict(tuning=kv.pop('tuning'),
+                     fings=kv.pop('fingers'))
+
+    db.chords.save(kv)
+
+
+def find_chordtypes_by_note():
+    return db.chords.aggregate({'$group': {'_id': '$root', 'types':
+                               {'$addToSet': '$fullname'}}},
+                               {'$sort': {'_id': 1}})
+
+
+def get_chords_by_fullname(fullname):
+    return db.chords.find({'fullname': fullname}) \
+             .sort('fings_sum', pymongo.ASCENDING)
+
+
+def get_all_first_chord():
+    group = {'$group': {'_id': '$fullname',
+             'root': {'$first': '$root'},
+             'first': {'$first': '$_id'}}}
+    result = db.chords.aggregate([{'$sort': dict(fings_min=1, fings_sum=1)},
+                                  group,
+                                  {'$sort': dict(root=1, _id=1)}])
+
+    return [Chord(c['first']['fings'], c['first']['tuning'])
+            for c in result['result']]

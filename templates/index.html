@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ukulele cheatsheet</title>
+    <script src="/static/chord.js"></script>
+
+<style>
+.chords {
+    list-style: none;
+}
+.chords li {
+    float: left;
+    width: 100px;
+    height: 100px;
+}
+</style>
+</head>
+<body>
+    <ul class="chords">
+    {% for chord in chords %}
+        <li><span data-chord='{{ chord.fingers_str() }} 5'>{{ chord.fullname() }}</span></li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

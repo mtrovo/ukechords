@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chords for {{fullname}}</title>
+    <script src="/static/chord.js"></script>
+
+<style>
+.chords {
+    list-style: none;
+}
+.chords li {
+    float: left;
+    width: 100px;
+    height: 100px;
+}
+</style>
+</head>
+<body>
+    <h1>{{fullname}}</h1>
+    <ul class='chords'>
+    {% for chord in chords %}
+        <li><span class='chord' data-chord='{{ chord.fingers_str }} 4'>{{ chord.fullname }}</span></li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
